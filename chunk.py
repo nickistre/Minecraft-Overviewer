@@ -579,15 +579,24 @@ class ChunkRenderer(object):
                 # no lighting for cave -- depth is probably more useful
                 composite.alpha_over(img, Image.blend(t[0],depth_colors[z],0.3), (imgx, imgy), t[1])
             else:
+                # / 128.0 -- Transform the height into the range 0..1
+                # **N     -- We don't want much change at low heights, so get a power curve in the range output.
+                #         -- The higher N, the less change at lower heights
+                # * N     -- 1 gives a white block. restrict the range to 0..N
+		fade_coeff = ((z / 128.0) **2) * 0.3
+                
                 if not self.world.lighting:
                     # no lighting at all
                     composite.alpha_over(img, t[0], (imgx, imgy), t[1])
+                    # TODO Needs improving
+                    composite.alpha_over(img, white_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[1]).enhance(fade_coeff))
+                
                 elif blockid in transparent_blocks:
                     # transparent means draw the whole
                     # block shaded with the current
                     # block's light
                     black_coeff, _ = self.get_lighting_coefficient(x, y, z)
-                    composite.alpha_over(img, Image.blend(t[0], black_color, black_coeff), (imgx, imgy), t[1])
+                    composite.alpha_over(img, Image.blend(Image.blend(t[0], black_color, black_coeff), white_color, fade_coeff), (imgx, imgy), t[1])
                 else:
                     # draw each face lit appropriately,
                     # but first just draw the block
@@ -597,16 +606,19 @@ class ChunkRenderer(object):
                     black_coeff, face_occlude = self.get_lighting_coefficient(x, y, z + 1)
                     if not face_occlude:
                         composite.alpha_over(img, black_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[0]).enhance(black_coeff))
+                        composite.alpha_over(img, white_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[0]).enhance(fade_coeff))
                     
                     # left face
                     black_coeff, face_occlude = self.get_lighting_coefficient(x - 1, y, z)
                     if not face_occlude:
                         composite.alpha_over(img, black_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[1]).enhance(black_coeff))
+                        composite.alpha_over(img, white_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[1]).enhance(fade_coeff))
 
                     # right face
                     black_coeff, face_occlude = self.get_lighting_coefficient(x, y + 1, z)
                     if not face_occlude:
                         composite.alpha_over(img, black_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[2]).enhance(black_coeff))
+                        composite.alpha_over(img, white_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[2]).enhance(fade_coeff))
 
             # Draw edge lines
             if blockid in (44,): # step block
@@ -677,6 +689,7 @@ def generate_facemasks():
     return (top, left, right)
 facemasks = generate_facemasks()
 black_color = Image.new("RGB", (24,24), (0,0,0))
+white_color = Image.new("RGB", (24,24), (255,255,255))
 
 # Render 128 different color images for color coded depth blending in cave mode
 def generate_depthcolors():
