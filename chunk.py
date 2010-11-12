@@ -23,6 +23,7 @@ import nbt
 import textures
 import world
 import composite
+import math
 
 """
 This module has routines related to rendering one particular chunk into an
@@ -583,7 +584,8 @@ class ChunkRenderer(object):
                 # **N     -- We don't want much change at low heights, so get a power curve in the range output.
                 #         -- The higher N, the less change at lower heights
                 # * N     -- 1 gives a white block. restrict the range to 0..N
-		fade_coeff = ((z / 128.0) **2) * 0.3
+		fade_coeff = (1/(1+math.exp(-1*(1.3*z/16)+6.0)))*.3
+        
                 
                 if not self.world.lighting:
                     # no lighting at all
