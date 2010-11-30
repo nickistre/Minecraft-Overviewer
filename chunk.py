@@ -136,7 +136,7 @@ def render_and_save(chunkfile, cachedir, worldobj, cave=False, queue=None):
         # forever for it to finish.
         raise Exception()
 
-fade_coeff_func, enhance_class = get_heightmap_func('heightlog2')
+fade_coeff_func, enhance_class = get_heightmap_func('log2')
 
 class ChunkCorrupt(Exception):
     pass
