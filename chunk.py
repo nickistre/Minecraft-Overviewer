@@ -24,6 +24,7 @@ import textures
 import world
 import composite
 import math
+from heightadjust import get_heightmap_func
 
 """
 This module has routines related to rendering one particular chunk into an
@@ -134,6 +135,8 @@ def render_and_save(chunkfile, cachedir, worldobj, cave=False, queue=None):
         # entire program, instead of this process dying and the parent waiting
         # forever for it to finish.
         raise Exception()
+
+fade_coeff_func, enhance_class = get_heightmap_func('heightlog2')
 
 class ChunkCorrupt(Exception):
     pass
@@ -584,21 +587,29 @@ class ChunkRenderer(object):
                 # **N     -- We don't want much change at low heights, so get a power curve in the range output.
                 #         -- The higher N, the less change at lower heights
                 # * N     -- 1 gives a white block. restrict the range to 0..N
-		fade_coeff = (1/(1+math.exp(-1*(1.3*z/16)+6.0)))*.3
+                #fade_coeff = (1/(1+math.exp(-1*(1.3*z/16)+6.0)))*.3
+                fade_coeff = fade_coeff_func(z);
+                
+                # set the color to use based on fade_coeff
+                if fade_coeff < 0:
+                    fade_color = black_color
+                    fade_coeff = abs(fade_coeff)
+                else:
+                    fade_color = white_color
         
                 
                 if not self.world.lighting:
                     # no lighting at all
                     composite.alpha_over(img, t[0], (imgx, imgy), t[1])
                     # TODO Needs improving
-                    composite.alpha_over(img, white_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[1]).enhance(fade_coeff))
+                    composite.alpha_over(img, fade_color, (imgx, imgy), enhance_class(facemasks[1]).enhance(fade_coeff))
                 
                 elif blockid in transparent_blocks:
                     # transparent means draw the whole
                     # block shaded with the current
                     # block's light
                     black_coeff, _ = self.get_lighting_coefficient(x, y, z)
-                    composite.alpha_over(img, Image.blend(Image.blend(t[0], black_color, black_coeff), white_color, fade_coeff), (imgx, imgy), t[1])
+                    composite.alpha_over(img, Image.blend(Image.blend(t[0], black_color, black_coeff), fade_color, fade_coeff), (imgx, imgy), t[1])
                 else:
                     # draw each face lit appropriately,
                     # but first just draw the block
@@ -608,19 +619,19 @@ class ChunkRenderer(object):
                     black_coeff, face_occlude = self.get_lighting_coefficient(x, y, z + 1)
                     if not face_occlude:
                         composite.alpha_over(img, black_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[0]).enhance(black_coeff))
-                        composite.alpha_over(img, white_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[0]).enhance(fade_coeff))
+                        composite.alpha_over(img, fade_color, (imgx, imgy), enhance_class(facemasks[0]).enhance(fade_coeff))
                     
                     # left face
                     black_coeff, face_occlude = self.get_lighting_coefficient(x - 1, y, z)
                     if not face_occlude:
                         composite.alpha_over(img, black_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[1]).enhance(black_coeff))
-                        composite.alpha_over(img, white_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[1]).enhance(fade_coeff))
+                        composite.alpha_over(img, fade_color, (imgx, imgy), enhance_class(facemasks[1]).enhance(fade_coeff))
 
                     # right face
                     black_coeff, face_occlude = self.get_lighting_coefficient(x, y + 1, z)
                     if not face_occlude:
                         composite.alpha_over(img, black_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[2]).enhance(black_coeff))
-                        composite.alpha_over(img, white_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[2]).enhance(fade_coeff))
+                        composite.alpha_over(img, fade_color, (imgx, imgy), enhance_class(facemasks[2]).enhance(fade_coeff))
 
             # Draw edge lines
             if blockid in (44,): # step block
