@@ -870,6 +870,9 @@ class ChunkRenderer(object):
                     # block shaded with the current
                     # block's light
                     black_coeff, _ = self.get_lighting_coefficient(x, y, z)
+
+                    composite.alpha_over(img, Image.blend(Image.blend(t[0], black_color, black_coeff), fade_color, fade_coeff), (imgx, imgy), t[1])
+
                     if self.world.spawn and black_coeff > 0.8 and blockid in solid_blocks and not (
                         blockid in nospawn_blocks or (
                             z != 127 and (blocks[x,y,z+1] in solid_blocks or blocks[x,y,z+1] in fluid_blocks)
@@ -878,7 +881,6 @@ class ChunkRenderer(object):
                         composite.alpha_over(img, Image.blend(t[0], red_color, black_coeff), (imgx, imgy), t[1])
                     else:
                         composite.alpha_over(img, Image.blend(t[0], black_color, black_coeff), (imgx, imgy), t[1])
-                        composite.alpha_over(img, Image.blend(Image.blend(t[0], black_color, black_coeff), fade_color, fade_coeff), (imgx, imgy), t[1])
                 else:
                     # draw each face lit appropriately,
                     # but first just draw the block
@@ -898,13 +900,13 @@ class ChunkRenderer(object):
 
                     if not face_occlude:
                         composite.alpha_over(img, over_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[0]).enhance(black_coeff))
-                        composite.alpha_over(img, Image.blend(Image.blend(t[0], black_color, black_coeff), fade_color, fade_coeff), (imgx, imgy), t[1])
+                        composite.alpha_over(img, fade_color, (imgx, imgy), enhance_class(facemasks[0]).enhance(fade_coeff))
                     
                     # left face
                     black_coeff, face_occlude = self.get_lighting_coefficient(x - 1, y, z)
                     if not face_occlude:
                         composite.alpha_over(img, over_color, (imgx, imgy), ImageEnhance.Brightness(facemasks[1]).enhance(black_coeff))
-                        composite.alpha_over(img, fade_color, (imgx, imgy), enhance_class(facemasks[0]).enhance(fade_coeff))
+                        composite.alpha_over(img, fade_color, (imgx, imgy), enhance_class(facemasks[1]).enhance(fade_coeff))
 
                     # right face
                     black_coeff, face_occlude = self.get_lighting_coefficient(x, y + 1, z)
