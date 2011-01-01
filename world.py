@@ -103,7 +103,7 @@ class WorldRenderer(object):
     files to update. If it includes a trailing newline, it is stripped, so you
     can pass in file handles just fine.
     """
-    def __init__(self, worlddir, cachedir, chunklist=None, lighting=False, night=False, spawn=False, useBiomeData=False):
+    def __init__(self, worlddir, cachedir, chunklist=None, lighting=False, night=False, spawn=False, useBiomeData=False, heightFade=None):
         self.worlddir = worlddir
         self.caves = False
         self.lighting = lighting or night or spawn
@@ -111,6 +111,7 @@ class WorldRenderer(object):
         self.spawn = spawn
         self.cachedir = cachedir
         self.useBiomeData = useBiomeData
+        self.heightFade = heightFade
 
         if self.useBiomeData:
             textures.prepareBiomeData(worlddir)
@@ -305,7 +306,7 @@ class WorldRenderer(object):
                 if chunk.check_cache(chunkfile, oldimg):
                     result = oldimg[1]
                 else:
-                    result = chunk.render_and_save(chunkfile, self.cachedir, self, oldimg, queue=q)
+                    result = chunk.render_and_save(chunkfile, self.cachedir, self, oldimg, queue=q, heightMapFunc=self.heightFade)
 
                 results[(col, row)] = result
                 if i > 0:
@@ -337,7 +338,7 @@ class WorldRenderer(object):
                 else:
                     result = pool.apply_async(chunk.render_and_save,
                             args=(chunkfile,self.cachedir,self, oldimg),
-                            kwds=dict(cave=self.caves, queue=q))
+                            kwds=dict(cave=self.caves, queue=q, heightMapFunc=self.heightFade))
                 asyncresults.append((col, row, result))
 
             pool.close()

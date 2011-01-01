@@ -152,14 +152,14 @@ def check_cache(chunkfile, oldimg):
     except OSError:
         return False
 
-def render_and_save(chunkfile, cachedir, worldobj, oldimg, cave=False, queue=None):
+def render_and_save(chunkfile, cachedir, worldobj, oldimg, cave=False, queue=None, heightMapFunc=None):
     """Used as the entry point for the multiprocessing workers (since processes
     can't target bound methods) or to easily render and save one chunk
     
     Returns the image file location"""
     a = ChunkRenderer(chunkfile, cachedir, worldobj, oldimg, queue)
     try:
-        return a.render_and_save(cave)
+        return a.render_and_save(cave, heightMapFunc)
     except ChunkCorrupt:
         # This should be non-fatal, but should print a warning
         pass
@@ -175,8 +175,6 @@ def render_and_save(chunkfile, cachedir, worldobj, oldimg, cave=False, queue=Non
         # entire program, instead of this process dying and the parent waiting
         # forever for it to finish.
         raise Exception()
-
-fade_coeff_func, enhance_class = get_heightmap_func('log2')
 
 class ChunkCorrupt(Exception):
     pass
@@ -517,7 +515,7 @@ class ChunkRenderer(object):
         self._digest = digest[:6]
         return self._digest
 
-    def render_and_save(self, cave=False):
+    def render_and_save(self, cave=False, heightMapFunc=None):
         """Render the chunk using chunk_render, and then save it to a file in
         the same directory as the source image. If the file already exists and
         is up to date, this method doesn't render anything.
@@ -555,7 +553,7 @@ class ChunkRenderer(object):
                 os.unlink(self.oldimg_path)
 
         # Render the chunk
-        img = self.chunk_render(cave=cave)
+        img = self.chunk_render(cave=cave, heightMapFunc=heightMapFunc)
         # Save it
         try:
             img.save(dest_path)
@@ -667,7 +665,7 @@ class ChunkRenderer(object):
         
         return (coefficient, occluded)
         
-    def chunk_render(self, img=None, xoff=0, yoff=0, cave=False):
+    def chunk_render(self, img=None, xoff=0, yoff=0, cave=False, heightMapFunc=None):
         """Renders a chunk with the given parameters, and returns the image.
         If img is given, the chunk is rendered to that image object. Otherwise,
         a new one is created. xoff and yoff are offsets in the image.
@@ -850,6 +848,7 @@ class ChunkRenderer(object):
                 #         -- The higher N, the less change at lower heights
                 # * N     -- 1 gives a white block. restrict the range to 0..N
                 #fade_coeff = (1/(1+math.exp(-1*(1.3*z/16)+6.0)))*.3
+                fade_coeff_func, enhance_class = get_heightmap_func(heightMapFunc)
                 fade_coeff = fade_coeff_func(z);
                 
                 # set the color to use based on fade_coeff
