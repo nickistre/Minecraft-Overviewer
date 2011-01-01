@@ -54,6 +54,7 @@ def main():
     parser.add_option("--spawn", dest="spawn", help="Renders shadows using light data from each chunk, as if it were night, while also highlighting areas that are dark enough to spawn mobs. Implies --lighting and --night.", action="store_true")
     parser.add_option("--imgformat", dest="imgformat", help="The image output format to use. Currently supported: png(default), jpg. NOTE: png will always be used as the intermediate image format.")
     parser.add_option("--optimize-img", dest="optimizeimg", help="If using png, perform image file size optimizations on the output. Specify 1 for pngcrush, 2 for pngcrush+optipng+advdef. This may double (or more) render times, but will produce up to 30% smaller images. NOTE: requires corresponding programs in $PATH or %PATH%")
+    parser.add_option("--heightfade", dest="heightfade", help="The height fading formula to use.  Currently supported: none(default), log, log2, parabolic.")
     parser.add_option("-q", "--quiet", dest="quiet", action="count", default=0, help="Print less output. You can specify this option multiple times.")
     parser.add_option("-v", "--verbose", dest="verbose", action="count", default=0, help="Print more output. You can specify this option multiple times.")
     parser.add_option("--skip-js", dest="skipjs", action="store_true", help="Don't output marker.js or regions.js")
@@ -124,7 +125,7 @@ def main():
         logging.info("Notice: Not using biome data for tinting")
 
     # First generate the world's chunk images
-    w = world.WorldRenderer(worlddir, cachedir, chunklist=chunklist, lighting=options.lighting, night=options.night, spawn=options.spawn, useBiomeData=useBiomeData)
+    w = world.WorldRenderer(worlddir, cachedir, chunklist=chunklist, lighting=options.lighting, night=options.night, spawn=options.spawn, useBiomeData=useBiomeData, heightFade=options.heightfade)
 
     w.go(options.procs)
 
